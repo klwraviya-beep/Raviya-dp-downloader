@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAVIYA DP DOWNLOADER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-red: #ff0044;
+            --dark-red: rgba(255, 0, 68, 0.2);
+            --glow-red: rgba(255, 0, 68, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            background-color: #070000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 50% 0%, #2a0000, #070000);
+        }
+
+        /* ----------------------------------
+           Advanced Alert System
+        ----------------------------------- */
+        .custom-alert {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--primary-red);
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px var(--glow-red);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .custom-alert.show { top: 20px; }
+        .alert-icon { font-size: 20px; }
+
+        /* ----------------------------------
+           Loading Screen Animations
+        ----------------------------------- */
+        #preloader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #070000;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .loader-circle {
+            width: 80px; height: 80px;
+            border: 4px solid #111;
+            border-top: 4px solid var(--primary-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px var(--glow-red);
+        }
+
+        .loader-text {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 24px; font-weight: 700;
+            color: var(--primary-red);
+            letter-spacing: 4px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; text-shadow: 0 0 15px var(--primary-red); } 100% { opacity: 0.5; } }
+
+        /* ----------------------------------
+           Main Web Interface
+        ----------------------------------- */
+        #main-content {
+            display: none; flex: 1;
+            justify-content: center; align-items: center;
+            padding: 20px; opacity: 0;
+            animation: fadeIn 1s ease forwards;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        .app-container {
+            background: rgba(15, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--primary-red);
+            border-radius: 20px;
+            padding: 40px 30px;
+            width: 100%; max-width: 450px;
+            box-shadow: 0 0 30px var(--dark-red);
+            text-align: center;
+            position: relative; overflow: hidden;
+        }
+
+        .app-container::before {
+            content: ''; position: absolute;
+            top: 0; left: -100%; width: 100%; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary-red), transparent);
+            animation: scanline 3s linear infinite;
+        }
+
+        @keyframes scanline { 100% { left: 100%; } }
+
+        h1.title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 32px; color: var(--primary-red);
+            margin-bottom: 5px; letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--glow-red);
+        }
+
+        p.subtitle { color: #888; font-size: 12px; letter-spacing: 1px; margin-bottom: 30px; }
+
+        .input-group { display: flex; gap: 10px; margin-bottom: 25px; }
+
+        select, input {
+            background: #110000; border: 1px solid #330000;
+            color: #fff; padding: 15px; border-radius: 8px;
+            outline: none; font-size: 16px; transition: 0.3s;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 15px var(--dark-red);
+        }
+
+        select { width: 35%; cursor: pointer; color: var(--primary-red); font-weight: bold;}
+        input { width: 65%; }
+
+        .btn {
+            width: 100%; padding: 15px;
+            background: transparent; border: 2px solid var(--primary-red);
+            border-radius: 8px; color: var(--primary-red);
+            font-weight: 600; font-size: 16px; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 1px;
+            transition: 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--primary-red); color: #fff;
+            box-shadow: 0 0 20px var(--glow-red);
+        }
+
+        /* ----------------------------------
+           Result Section
+        ----------------------------------- */
+        .result-box { display: none; margin-top: 30px; animation: slideUp 0.5s ease; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .dp-image {
+            width: 160px; height: 160px;
+            border-radius: 50%; border: 3px solid var(--primary-red);
+            padding: 5px; object-fit: cover; margin-bottom: 20px;
+            box-shadow: 0 0 25px var(--glow-red);
+            background: #110000;
+        }
+
+        /* ----------------------------------
+           Footer
+        ----------------------------------- */
+        footer {
+            text-align: center; padding: 20px;
+            background: #050000; border-top: 1px solid #220000; margin-top: auto;
+        }
+        footer p { font-family: 'Rajdhani', sans-serif; color: #666; font-size: 14px; letter-spacing: 2px; }
+        footer span { color: var(--primary-red); font-weight: 700; text-shadow: 0 0 5px var(--glow-red);}
+
+    </style>
+</head>
+<body onload="hidePreloader()">
+
+    <div id="customAlert" class="custom-alert">
+        <span id="alertIcon" class="alert-icon">⚠️</span>
+        <span id="alertMessage">Message goes here</span>
+    </div>
+
+    <div id="preloader">
+        <div class="loader-circle"></div>
+        <div class="loader-text">RAVIYA SYSTEM BOOTING...</div>
+    </div>
+
+    <div id="main-content" style="display: none;">
+        <div class="app-container">
+            <h1 class="title">RAVIYA DP DOWNLOAD</h1>
+            <p class="subtitle">ADVANCED PROFILE FETCHER</p>
+
+            <div class="input-group">
+                <select id="countryCode">
+                    <option value="94">+94 (LK)</option>
+                    <option value="1">+1 (US)</option>
+                    <option value="44">+44 (UK)</option>
+                    <option value="91">+91 (IN)</option>
+                </select>
+                <input type="number" id="phoneNumber" placeholder="Enter Target Number">
+            </div>
+
+            <button class="btn" id="scanBtn" onclick="fetchTarget()">SCAN TARGET</button>
+
+            <div class="result-box" id="resultBox">
+                <img src="" alt="DP" class="dp-image" id="dpImage">
+                <button class="btn" style="margin-top: 10px; background: #ff0044; color: white;" onclick="downloadDP()">DOWNLOAD IMAGE</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>DEVELOP BY <span>RAVIYA TECH</span></p>
+    </footer>
+
+    <script>
+        // Advanced Custom Alert Function
+        function showAlert(msg, type = 'error') {
+            const alertBox = document.getElementById('customAlert');
+            const alertMsg = document.getElementById('alertMessage');
+            const alertIcon = document.getElementById('alertIcon');
+
+            alertMsg.innerText = msg;
+            
+            if (type === 'error') {
+                alertIcon.innerText = '❌';
+                alertBox.style.borderColor = '#ff0044';
+                alertBox.style.boxShadow = '0 0 20px rgba(255, 0, 68, 0.5)';
+            } else if (type === 'success') {
+                alertIcon.innerText = '✅';
+                alertBox.style.borderColor = '#00ff44';
+                alertBox.style.boxShadow = '0 0 20px rgba(0, 255, 68, 0.5)';
+            } else {
+                alertIcon.innerText = '⚠️';
+                alertBox.style.borderColor = '#ffaa00';
+                alertBox.style.boxShadow = '0 0 20px rgba(255, 170, 0, 0.5)';
+            }
+
+            alertBox.classList.add('show');
+            setTimeout(() => alertBox.classList.remove('show'), 3500);
+        }
+
+        // Hide Preloader
+        function hidePreloader() {
+            setTimeout(() => {
+                const preloader = document.getElementById('preloader');
+                const mainContent = document.getElementById('main-content');
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                    mainContent.style.display = 'flex';
+                }, 800);
+            }, 2500);
+        }
+
+        // Fetch Data from Backend API
+        async function fetchTarget() {
+            const countryCode = document.getElementById('countryCode').value;
+            const phoneNum = document.getElementById('phoneNumber').value;
+            const btn = document.getElementById('scanBtn');
+            const resultBox = document.getElementById('resultBox');
+            const dpImage = document.getElementById('dpImage');
+
+            if(phoneNum === "") {
+                showAlert("කරුණාකර ඉලක්ක දුරකථන අංකයක් ඇතුලත් කරන්න!", "error");
+                return;
+            }
+
+            const fullNumber = countryCode + phoneNum;
+
+            btn.innerText = "FETCHING DATA...";
+            btn.style.opacity = "0.7";
+            btn.style.pointerEvents = "none";
+            resultBox.style.display = "none";
+
+            try {
+                // Backend API Request
+                const response = await fetch(`http://localhost:3000/api/getdp?number=${fullNumber}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    dpImage.src = data.url;
+                    showAlert("Profile Picture Successfully Fetched!", "success");
+                    resultBox.style.display = "block";
+                } else {
+                    dpImage.src = data.url; // Default/Error image
+                    showAlert(data.message, "warning");
+                    resultBox.style.display = "block";
+                }
+
+            } catch (error) {
+                showAlert("Server Connection Failed! Backend එක Run වෙනවාද බලන්න.", "error");
+                console.error(error);
+            } finally {
+                btn.innerText = "SCAN TARGET";
+                btn.style.opacity = "1";
+                btn.style.pointerEvents = "auto";
+            }
+        }
+
+        // Download Image File
+        function downloadDP() {
+            const imageSrc = document.getElementById('dpImage').src;
+            
+            // Default image එක download වීම වැළැක්වීම
+            if(imageSrc.includes('ui-avatars')) {
+                showAlert("මෙම රූපය Download කළ නොහැක!", "error");
+                return;
+            }
+
+            showAlert("Downloading Started...", "success");
+
+            fetch(imageSrc)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'Raviya_Target_DP.jpg'; 
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(() => showAlert("Download Error! කරුණාකර නැවත උත්සාහ කරන්න.", "error"));
+        }
+    </script>
+</body>
+</html>
